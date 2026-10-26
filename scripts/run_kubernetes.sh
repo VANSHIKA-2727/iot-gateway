@@ -7,13 +7,13 @@ kubectl cluster-info --request-timeout=5s >/dev/null
 [[ "${1:-}" == --apply ]] || { echo 'Review k8s/ then rerun with --apply to create/update iot-core in the current namespace.'; exit 0; }
 # Refuse to adopt resources unless this script previously annotated them.
 for resource in deployment/iot-core service/iot-core; do
-  if kubectl get "$resource" >/dev/null 2>&1; then
-    [[ "$(kubectl get "$resource" -o jsonpath='{.metadata.annotations.lab-owner}')" == iot-gateway ]] || { echo "ERROR: $resource exists without lab ownership; inspect manually"; exit 1; }
+  existing="$(kubectl get "$resource" --ignore-not-found -o jsonpath='{.metadata.name}:{.metadata.annotations.lab-owner}')"
+  if [[ -n "$existing" && "$existing" != ':' && "$existing" != iot-core:iot-gateway ]]; then
+    echo "ERROR: $resource exists without lab ownership; inspect manually"; exit 1
   fi
 done
 step 2 'Apply lab resources in current context and namespace'
 kubectl apply -f k8s/
-kubectl annotate deployment/iot-core service/iot-core lab-owner=iot-gateway --overwrite
 step 3 'Verify rollout, replicas, labels, service'
 kubectl rollout status deployment/iot-core --timeout=120s
 [[ "$(kubectl get deployment iot-core -o jsonpath='{.status.readyReplicas}')" == 2 ]]

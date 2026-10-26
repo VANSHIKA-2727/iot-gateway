@@ -121,7 +121,7 @@ kubectl get service iot-core -o wide
 curl --fail --max-time 5 http://localhost:30098
 ```
 
-Expected: deployment READY `2/2`, two Running pods labeled `service=iot-core`, service `NodePort` with `80:30098/TCP`. Direct manual apply is `kubectl apply -f k8s/`; use the script to retain its existing-resource safety check. The script annotates ownership without adding misleading pod labels. Pre-existing unowned resources cause refusal. Always inspect context/namespace; apply is a mutation. Access restrictions or an API timeout are errors, not proof that resource names are free.
+Expected: deployment READY `2/2`, two Running pods labeled `service=iot-core`, service `NodePort` with `80:30098/TCP`. Direct manual apply is `kubectl apply -f k8s/`; use the script to retain its existing-resource safety check. The manifests annotate ownership without adding misleading pod labels. Pre-existing unowned resources cause refusal. Always inspect context/namespace; apply is a mutation. Access restrictions or an API timeout are errors, not proof that resource names are free.
 
 NodePort routing differs by local cluster. On a VM/container-based cluster, localhost:30098 may not route. For minikube use `minikube service iot-core --url` (keep its terminal open when required), then curl the supplied URL. Portable fallback:
 
