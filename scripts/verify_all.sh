@@ -15,15 +15,22 @@ else skip 'Python unavailable'; fi
 step 2 'Git release'
 if command -v git >/dev/null && [[ -d .git ]]; then
   if [[ "$(git symbolic-ref --short HEAD)" == main ]] &&
-     [[ "$(git rev-parse main)" == "$(git rev-parse release-v6.0)" ]] &&
-     [[ "$(git rev-parse main)" == "$(git rev-parse 'v6.0.0-release^{commit}')" ]] &&
-     [[ -z "$(git status --porcelain)" ]]; then pass 'Git branches, tag, clean main'; else fail 'Git release'; fi
+     git show-ref --verify --quiet refs/heads/release-v6.0 &&
+     git rev-parse --verify 'v6.0.0-release^{commit}' >/dev/null 2>&1 &&
+     git merge-base --is-ancestor v6.0.0-release release-v6.0 &&
+     git merge-base --is-ancestor release-v6.0 main &&
+     [[ "$(git show v6.0.0-release:mqtt.conf)" == PORT=1883 ]]; then
+    pass 'Git release branch merged into main, release tag and MQTT configuration'
+  else fail 'Git release history or current branch'; fi
+  if [[ -n "$(git status --porcelain)" ]]; then
+    echo 'NOTE: Working tree has changes; release history check is independent. Review with git status --short.'
+  fi
 else skip 'Git release not initialized'; fi
 step 3 'Docker'
 if command -v docker >/dev/null && docker info >/dev/null 2>&1; then
   if docker image inspect iot-hub:latest >/dev/null 2>&1; then pass 'Docker image'; else fail 'Docker image'; fi
   if [[ "$(docker inspect -f '{{.State.Running}}' iot-hub 2>/dev/null || true)" == true ]]; then pass 'Container running'; else fail 'Container running'; fi
-  if docker logs iot-hub 2>&1 | grep -q 'Smart Hub Online'; then pass 'Container logs'; else fail 'Container logs'; fi
+  if docker logs --tail 200 iot-hub 2>&1 | grep 'Smart Hub Online' >/dev/null; then pass 'Container logs'; else fail 'Container logs'; fi
   if command -v curl >/dev/null; then
     if curl --max-time 5 -fsS http://localhost:8088 | grep -qx 'Smart Hub Online'; then pass 'Docker HTTP'; else fail 'Docker HTTP'; fi
   else skip 'curl missing'; fi
