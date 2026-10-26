@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.terraform/
+*.tfstate*
+*.tfplan
+iot_config.env
+.env
+.DS_Store
